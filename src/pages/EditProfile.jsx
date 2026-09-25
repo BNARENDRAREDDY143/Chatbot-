@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { supabase } from "@/integrations/supabase/client";
+import { api } from "@/services/api";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -9,43 +9,47 @@ import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 
 const EditProfile = () => {
-  const { user } = useAuth();
+  const { user, refreshProfile } = useAuth();
   const navigate = useNavigate();
-  const [form, setForm] = useState({ username: "", email: "", department: "", register_number: "" });
+  const [form, setForm] = useState({
+    username: "",
+    email: "",
+    department: "",
+    registerNumber: ""
+  });
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    if (user) {
-      supabase.
-        from("profiles").
-        select("username, email, department, register_number").
-        eq("user_id", user.id).
-        single().
-        then(({ data }) => {
-          if (data) setForm({
+    const fetchUserData = async () => {
+      try {
+        const data = await api.getMe();
+        if (data) {
+          setForm({
             username: data.username || "",
             email: data.email || "",
             department: data.department || "",
-            register_number: data.register_number || ""
+            registerNumber: data.registerNumber || ""
           });
-        });
-    }
+        }
+      } catch (err) {
+        console.error("Error fetching user data:", err);
+      }
+    };
+    fetchUserData();
   }, [user]);
 
   const handleSave = async (e) => {
     e.preventDefault();
-    if (!user) return;
     setLoading(true);
-    const { error } = await supabase.
-      from("profiles").
-      update(form).
-      eq("user_id", user.id);
-    setLoading(false);
-    if (error) {
-      toast.error("Failed to save");
-    } else {
-      toast.success("Profile updated!");
+    try {
+      await api.updateProfile(form);
+      if (refreshProfile) await refreshProfile();
+      toast.success("Profile updated successfully in MongoDB!");
       navigate("/profile");
+    } catch (err) {
+      toast.error(err.message || "Failed to save profile");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -61,31 +65,73 @@ const EditProfile = () => {
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSave} className="space-y-4">
-              {[
-                { id: "username", label: "Name", type: "text" },
-                { id: "email", label: "Email", type: "email" },
-                { id: "department", label: "Department", type: "text" },
-                { id: "register_number", label: "Register Number", type: "text" }].
-                map((field) =>
-                  <div key={field.id} className="space-y-1">
-                    <Label htmlFor={field.id}>{field.label}</Label>
-                    <Input
-                      id={field.id}
-                      type={field.type}
-                      value={form[field.id]}
-                      onChange={(e) => setForm((prev) => ({ ...prev, [field.id]: e.target.value }))} />
+              <div className="space-y-1">
+                <Label htmlFor="username">Name</Label>
+                <Input
+                  id="username"
+                  type="text"
+                  value={form.username}
+                  onChange={(e) => setForm((prev) => ({ ...prev, username: e.target.value }))}
+                  required
+                />
+              </div>
 
-                  </div>
-                )}
-              <Button type="submit" className="w-full gradient-navy text-primary-foreground font-bold" disabled={loading}>
-                {loading ? "Saving..." : "Save Changes"}
-              </Button>
+              <div className="space-y-1">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={form.email}
+                  onChange={(e) => setForm((prev) => ({ ...prev, email: e.target.value }))}
+                  required
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="department">Department / Branch</Label>
+                <Input
+                  id="department"
+                  type="text"
+                  placeholder="e.g. CSE, ECE, AI&ML, IT"
+                  value={form.department}
+                  onChange={(e) => setForm((prev) => ({ ...prev, department: e.target.value }))}
+                />
+              </div>
+
+              <div className="space-y-1">
+                <Label htmlFor="registerNumber">Register / Roll Number</Label>
+                <Input
+                  id="registerNumber"
+                  type="text"
+                  placeholder="e.g. 23FE1A0501"
+                  value={form.registerNumber}
+                  onChange={(e) => setForm((prev) => ({ ...prev, registerNumber: e.target.value }))}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => navigate("/profile")}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="submit"
+                  className="flex-1 gradient-navy text-primary-foreground font-bold"
+                  disabled={loading}
+                >
+                  {loading ? "Saving..." : "Save Changes"}
+                </Button>
+              </div>
             </form>
           </CardContent>
         </Card>
       </div>
-    </div>);
-
+    </div>
+  );
 };
 
 export default EditProfile;

@@ -5,6 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "server": "node backend/server.js",
+    "server:dev": "nodemon backend/server.js",
+    "seed": "node backend/scripts/seed.js",
     "build": "vite build",
     "build:dev": "vite build --mode development",
     "lint": "eslint .",

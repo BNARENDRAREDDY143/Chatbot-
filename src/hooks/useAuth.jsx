@@ -1,63 +1,56 @@
 import { useState, useEffect, createContext, useContext } from "react";
-import { supabase } from "@/integrations/supabase/client";
-
-
-
-
-
-
-
-
-
-
+import { api } from "@/services/api";
 
 const AuthContext = createContext(undefined);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [session, setSession] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setLoading(false);
-    });
-
-    return () => subscription.unsubscribe();
+    // Check MongoDB session via token
+    const initAuth = async () => {
+      try {
+        const currentUser = await api.getMe();
+        setUser(currentUser);
+      } catch (err) {
+        console.error("Auth check failed:", err);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    initAuth();
   }, []);
 
   const signUp = async (email, password, username) => {
-    const { error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: { data: { username } }
-    });
-    if (error) throw error;
+    const res = await api.register({ email, password, username });
+    setUser(res.user);
+    return res;
   };
 
   const signIn = async (email, password) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) throw error;
+    const res = await api.login(email, password);
+    setUser(res.user);
+    return res;
   };
 
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) throw error;
+    api.logout();
+    setUser(null);
+  };
+
+  const refreshProfile = async () => {
+    const updated = await api.getMe();
+    setUser(updated);
+    return updated;
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, loading, signUp, signIn, signOut, refreshProfile }}>
       {children}
-    </AuthContext.Provider>);
-
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => {
