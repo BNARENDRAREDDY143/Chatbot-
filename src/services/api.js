@@ -1,6 +1,6 @@
 const API_BASE_URL =
   import.meta.env.VITE_BACKEND_URL ||
-  (import.meta.env.DEV ? 'http://localhost:5001/api' : '/api');
+  (import.meta.env.DEV ? 'http://localhost:5001/api' : 'https://chatbot-1-gfpp.onrender.com/api');
 
 // Helper to get auth token
 const getAuthHeaders = () => {

@@ -13,7 +13,17 @@ from college_data import college_data
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {
+    "origins": [
+        "https://chatbot-57jp.vercel.app",
+        "https://chatbot-1-gfpp.onrender.com",
+        "http://localhost:5173",
+        "http://localhost:8080",
+        "http://localhost:3000"
+    ],
+    "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    "allow_headers": ["Content-Type", "Authorization", "X-Requested-With", "Accept", "Origin"]
+}})
 
 # Configurations
 BASE_DIR = os.path.abspath(os.path.dirname(__file__))

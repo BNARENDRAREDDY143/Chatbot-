@@ -29,11 +29,35 @@ const app = express();
 // Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-app.use(cors({
-  origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
-}));
+const allowedOrigins = [
+  'https://chatbot-57jp.vercel.app',
+  'https://chatbot-1-gfpp.onrender.com',
+  'http://localhost:5173',
+  'http://localhost:8080',
+  'http://localhost:3000',
+  'http://localhost:5001',
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:8080',
+  ...(process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',').map(s => s.trim()) : [])
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const isVercel = /^https:\/\/.*\.vercel\.app$/.test(origin);
+    const isRender = /^https:\/\/.*\.onrender\.com$/.test(origin);
+    if (allowedOrigins.includes(origin) || isVercel || isRender) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin']
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
