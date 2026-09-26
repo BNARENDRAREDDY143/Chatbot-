@@ -3,13 +3,36 @@ import { KnowledgeBase } from '../models/KnowledgeBase.js';
 import { collegeData } from '../data/collegeData.js';
 import mongoose from 'mongoose';
 
-// Fallback search in memory or MongoDB for quick, accurate responses
+// Common stopwords to filter out from user query for accurate keyword matching
+const STOP_WORDS = new Set([
+  'a', 'an', 'the', 'is', 'are', 'was', 'were', 'and', 'or', 'in', 'on', 'at',
+  'to', 'for', 'of', 'with', 'by', 'about', 'give', 'tell', 'me', 'what',
+  'which', 'how', 'many', 'much', 'can', 'you', 'please', 'show', 'do', 'does',
+  'i', 'want', 'know', 'get', 'any', 'details', 'info', 'information', 'regarding'
+]);
+
+// Conversational greetings matcher
+const GREETING_WORDS = new Set(['hi', 'hello', 'hey', 'namaste', 'good morning', 'good afternoon', 'good evening', 'hola']);
+
+// Intelligent search over college knowledge base
 const findBestCollegeAnswer = async (userQuery) => {
-  const queryLower = userQuery.toLowerCase().trim();
-  const words = queryLower.split(/\s+/).filter(w => w.length > 2);
+  const queryClean = userQuery.toLowerCase().replace(/[^a-z0-9\s]/g, ' ').trim();
+  const rawWords = queryClean.split(/\s+/).filter(w => w.length > 0);
+
+  // 1. Check for simple conversational greetings
+  if (rawWords.length <= 2 && rawWords.some(w => GREETING_WORDS.has(w))) {
+    return {
+      reply: `👋 **Hello! Welcome to Vignan's Lara Institute of Technology & Science (VLITS) Admissions & Enquiry Assistant.**\n\nI can help you with:\n• 📊 **AP EAMCET / EAPCET Cutoff Ranks**\n• 🎓 **B.Tech, M.Tech & MCA Courses**\n• 💰 **Fee Structure & Merit Scholarships**\n• 🚀 **Placement Statistics & Top Recruiters**\n• 🏢 **Hostel & Bus Transport Facilities**\n• 📋 **Admission Procedure & Management Quota**\n\nWhat would you like to know today?`,
+      category: 'general'
+    };
+  }
+
+  // Filter significant keywords
+  const queryTokens = rawWords.filter(w => !STOP_WORDS.has(w) && w.length >= 2);
+  const searchTokens = queryTokens.length > 0 ? queryTokens : rawWords;
 
   try {
-    // 1. First check MongoDB KnowledgeBase if available
+    // Check MongoDB KnowledgeBase if connected, otherwise fallback to in-memory collegeData
     const dbDocs = mongoose.connection.readyState === 1
       ? await KnowledgeBase.find({}).lean()
       : [];
@@ -20,37 +43,56 @@ const findBestCollegeAnswer = async (userQuery) => {
 
     for (const item of sourceData) {
       let score = 0;
+      let matchedTokensCount = 0;
 
-      // Exact keyword matches
-      if (item.keywords && Array.isArray(item.keywords)) {
-        for (const kw of item.keywords) {
-          if (queryLower.includes(kw.toLowerCase())) {
-            score += 3;
-          }
-          for (const word of words) {
-            if (kw.toLowerCase().includes(word)) {
-              score += 1.5;
-            }
-          }
+      const itemKeywords = (item.keywords || []).map(k => k.toLowerCase());
+      const itemQuestion = (item.question || '').toLowerCase();
+      const itemAnswer = (item.answer || '').toLowerCase();
+
+      // A. Check exact multi-word keyword match in the query (e.g., "cutoff rank", "fee structure")
+      for (const kw of itemKeywords) {
+        if (queryClean.includes(kw)) {
+          score += 6;
+          matchedTokensCount += 2;
         }
       }
 
-      // Question similarity
-      if (item.question && item.question.toLowerCase().includes(queryLower)) {
-        score += 5;
-      }
-      for (const word of words) {
-        if (item.question && item.question.toLowerCase().includes(word)) {
-          score += 1;
+      // B. Token-level matching against keywords and question
+      for (const token of searchTokens) {
+        let tokenMatched = false;
+
+        for (const kw of itemKeywords) {
+          if (kw === token) {
+            score += 4;
+            tokenMatched = true;
+          } else if (kw.includes(token) || token.includes(kw)) {
+            score += 2;
+            tokenMatched = true;
+          }
+        }
+
+        if (itemQuestion.includes(token)) {
+          score += 2.5;
+          tokenMatched = true;
+        }
+
+        if (itemAnswer.includes(token)) {
+          score += 0.5;
+        }
+
+        if (tokenMatched) {
+          matchedTokensCount++;
         }
       }
 
-      // Add priority weight
-      score += (item.priority || 1) * 0.2;
+      // ONLY grant priority bonus if at least one meaningful token or keyword matched!
+      if (matchedTokensCount > 0 && score > 0) {
+        score += (item.priority || 1) * 0.15;
 
-      if (score > highestScore) {
-        highestScore = score;
-        bestMatch = item;
+        if (score > highestScore) {
+          highestScore = score;
+          bestMatch = item;
+        }
       }
     }
 
@@ -64,9 +106,16 @@ const findBestCollegeAnswer = async (userQuery) => {
     console.error('Error querying knowledge base:', err);
   }
 
-  // Generic intelligent fallback
+  // Dynamic intelligent fallback when no direct answer is found
   return {
-    reply: `I can help you with admissions, courses (CSE, AI&ML, Data Science, ECE, ME, etc.), fee structures, placement statistics (85%+ placed, highest ₹24 LPA), hostel accommodations, bus transport routes, and contact details for **Vignan's Lara Institute of Technology & Science**.\n\nCould you please specify your query or contact the admissions desk at **+91-863-2381200** / **admissions@vignanlara.org**?`,
+    reply: `I couldn't find an exact match for your query: *"**${userQuery}**"*\n\n` +
+      `Here are the most common areas I can help you with:\n` +
+      `• **Cutoffs:** Expected AP EAPCET closing ranks for CSE, AIML, Data Science, ECE, IT, ME, CE.\n` +
+      `• **Admissions:** Category-A (EAPCET counseling - Code: **LARA**) & Category-B (Management Quota).\n` +
+      `• **Placements:** 85%+ campus placement record, highest ₹24 LPA, top recruiters TCS, Infosys, Amazon.\n` +
+      `• **Hostel & Transport:** 40+ bus routes across Guntur/Vijayawada and on-campus separate hostels.\n\n` +
+      `For specialized assistance, please contact the **VLITS Admissions Desk** directly:\n` +
+      `📞 **+91-863-2381200** / **+91-98499 66066** | 📧 **admissions@vignanlara.org**`,
     category: 'general'
   };
 };
