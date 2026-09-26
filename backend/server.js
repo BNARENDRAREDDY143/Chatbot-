@@ -66,21 +66,34 @@ app.get('/api/health', (req, res) => {
   });
 });
 
-// Root route
-app.get('/', (req, res) => {
-  res.json({
-    message: "Welcome to Vignan's Lara Institute of Technology & Science Chatbot API",
-    endpoints: {
-      health: '/api/health',
-      auth: '/api/auth (register, login, me, profile)',
-      chat: '/api/chat (POST message, GET history, DELETE history)',
-      faq: '/api/faq (GET FAQs, POST FAQ)',
-      enquiry: '/api/enquiry (POST submit enquiry)'
-    }
-  });
-});
+import fs from 'fs';
 
-// 404 Handler
+const distPath = join(__dirname, '../dist');
+const hasDist = fs.existsSync(distPath) && fs.existsSync(join(distPath, 'index.html'));
+
+if (hasDist) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res, next) => {
+    if (req.originalUrl.startsWith('/api')) return next();
+    res.sendFile(join(distPath, 'index.html'));
+  });
+} else {
+  // Root route for API only mode
+  app.get('/', (req, res) => {
+    res.json({
+      message: "Welcome to Vignan's Lara Institute of Technology & Science Chatbot API",
+      endpoints: {
+        health: '/api/health',
+        auth: '/api/auth (register, login, me, profile)',
+        chat: '/api/chat (POST message, GET history, DELETE history)',
+        faq: '/api/faq (GET FAQs, POST FAQ)',
+        enquiry: '/api/enquiry (POST submit enquiry)'
+      }
+    });
+  });
+}
+
+// 404 Handler for undefined API routes
 app.use((req, res) => {
   res.status(404).json({ message: `Endpoint ${req.originalUrl} not found` });
 });

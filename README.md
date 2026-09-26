@@ -1,84 +1,108 @@
-# Lara College Enquiry Chatbot 🎓
+# Vignan's Lara Institute of Technology & Science - College Enquiry Chatbot
 
-An intelligent AI-powered college enquiry chatbot application for **Vignan's Lara Institute of Technology & Science (VLITS)**, Vadlamudi, Guntur.
-
-## Features
-
-- 🤖 **Interactive AI Assistant**: Provides instantaneous responses regarding courses, admissions, cutoffs, fee structures, hostel accommodations, bus transport routes, and placements.
-- 🔐 **Authentication & User Profile**: Student registration, login, JWT-based secure sessions, and profile editing.
-- 💬 **Persistent Chat History**: Stores and manages chat sessions with MongoDB.
-- ⚡ **Modern UI/UX**: Built with React, Vite, Tailwind CSS, Framer Motion, and shadcn/ui components.
-- 🛡️ **Robust Backend**: Node.js & Express REST API with MongoDB/Mongoose database models and full text search knowledge base.
+An AI-powered College Enquiry Chatbot and Student Portal for **Vignan's Lara Institute of Technology & Science (VLITS)**, built with React, Tailwind CSS, Vite, and an Express / Flask backend with SQLite / MongoDB support.
 
 ---
 
-## Tech Stack
+## 🚀 Features
 
-- **Frontend**: React 18, Vite, Tailwind CSS, Framer Motion, Radix UI / shadcn/ui, Lucide Icons
-- **Backend**: Node.js, Express.js, MongoDB / Mongoose, JWT, bcryptjs, Morgan, CORS
-- **Testing**: Vitest, React Testing Library, JSDOM
+- **Interactive AI Chatbot**: Instant answers to student inquiries regarding admissions, courses (CSE, AI&ML, Data Science, ECE, ME, CE, etc.), fee structures, placement records, hostels, transportation, and campus life.
+- **Smart Knowledge Base & Fallback System**: Fast keyword and semantic search over comprehensive college enquiry data, with optional Gemini / OpenAI LLM integration.
+- **User Authentication**: Student/Visitor registration and login with JWT token-based authentication and profile management.
+- **Enquiry & Support System**: Submit admission and general inquiries directly through the portal.
+- **Responsive & Modern UI**: Built with Radix UI, Lucide icons, Framer Motion animations, and Sonner notifications.
 
 ---
 
-## Getting Started
+## 🛠️ Project Structure
 
-### 1. Install Dependencies
+```
+├── src/                    # Frontend React Application
+│   ├── components/         # Reusable UI components & Navbar
+│   ├── hooks/              # Custom hooks (useAuth, use-toast, etc.)
+│   ├── pages/              # Pages: Chat, Auth, Profile, About, etc.
+│   ├── services/           # Frontend API client (services/api.js)
+│   └── index.css           # Styling
+├── backend/                # Backend Server
+│   ├── config/             # Database connection setup
+│   ├── controllers/        # Auth, Chat, FAQ, and Enquiry controllers
+│   ├── data/               # Knowledge base college data
+│   ├── models/             # Mongoose & SQLite models
+│   ├── routes/             # REST API routes
+│   ├── server.js           # Express.js backend server
+│   └── app.py              # Flask / Python alternative backend
+├── package.json            # Frontend & project dependencies
+└── README.md
+```
 
+---
+
+## ⚙️ Getting Started
+
+### 1. Prerequisites
+- **Node.js**: v18+ installed
+- **npm** or **bun** / **yarn**
+
+### 2. Frontend Setup
 ```bash
 # Install frontend dependencies
 npm install
 
-# Install backend dependencies
-cd backend
-npm install
-cd ..
-```
-
-### 2. Environment Configuration
-
-Frontend `.env`:
-```env
-VITE_BACKEND_URL=http://localhost:5001/api
-```
-
-Backend `backend/.env`:
-```env
-PORT=5001
-NODE_ENV=development
-MONGODB_URI=mongodb://127.0.0.1:27017/lara_college_chatbot
-JWT_SECRET=your_jwt_secret_key
-JWT_EXPIRES_IN=7d
-```
-
-### 3. Seed Knowledge Base (Optional)
-
-```bash
-npm run seed
-```
-
-### 4. Run Development Servers
-
-Run backend and frontend:
-```bash
-# Start backend server
-npm run server
-
-# In another terminal, start frontend dev server
+# Start Vite development server
 npm run dev
 ```
+The frontend will start at `http://localhost:5173`.
 
-### 5. Running Tests & Build
+### 3. Backend Setup
 
+#### Running the Node.js / Express Backend (Recommended)
 ```bash
-# Run unit tests
-npm test
+# In the backend directory
+cd backend
+npm install
+npm start
+```
+Or from root:
+```bash
+npm run server:node
+```
+The server will run on `http://localhost:5001`.
 
-# Build for production
-npm run build
+#### Running the Python / Flask Backend (Alternative)
+```bash
+# In the backend directory
+cd backend
+pip install -r requirements.txt
+python app.py
+```
+Or from root:
+```bash
+npm run server
 ```
 
 ---
 
-## License
+## 🔑 Environment Configuration
 
-MIT
+### Frontend (`.env` in root)
+```env
+VITE_BACKEND_URL="http://localhost:5001/api"
+```
+
+### Backend (`backend/.env`)
+```env
+PORT=5001
+JWT_SECRET=lara_college_chatbot_secret_jwt_key_2026_xyz123
+DATABASE_URL=sqlite:///lara_college.db
+# Optional LLM integration
+# GEMINI_API_KEY=your_gemini_api_key
+# OPENAI_API_KEY=your_openai_api_key
+```
+
+---
+
+## 🧪 Testing and Linting
+
+- **Run unit tests**: `npm test`
+- **Run linter**: `npm run lint`
+- **Build production bundle**: `npm run build`
