@@ -42,6 +42,12 @@ const chatMessageSchema = new mongoose.Schema(
     isFeedbackHelpful: {
       type: Boolean,
       default: null
+    },
+    attachment: {
+      fileName: { type: String },
+      fileType: { type: String },
+      fileSize: { type: Number },
+      fileUrl: { type: String }
     }
   },
   {

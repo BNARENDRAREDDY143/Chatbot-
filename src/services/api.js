@@ -67,11 +67,11 @@ export const api = {
   },
 
   // Chat
-  async sendMessage(message, sessionId) {
+  async sendMessage(message, sessionId, attachment) {
     const res = await fetch(`${API_BASE_URL}/chat`, {
       method: 'POST',
       headers: getAuthHeaders(),
-      body: JSON.stringify({ message, sessionId })
+      body: JSON.stringify({ message, sessionId, attachment })
     });
     const result = await res.json();
     if (!res.ok) throw new Error(result.message || result.reply || 'Chat request failed');
